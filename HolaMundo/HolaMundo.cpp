@@ -284,7 +284,7 @@ int main()
 		glUseProgram(program);
 		glBindVertexArray(vertexArrayObject);
 		glm::mat4 model = glm::mat4(1.0f);
-		
+		//TODO gun follow cursor
 		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f,1.0f,0.0f));
 		glm::mat4 view = glm::mat4(1.0f);
 		view = glm::lookAt(glm::vec3(2.0f, 0.0f, 10.0f),
