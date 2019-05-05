@@ -17,6 +17,12 @@
 std::vector<float> vertexPoints;
 std::vector<unsigned int> faceVertices;
 std::vector<float> verts(24);
+glm::mat4 model = glm::mat4(1.0f);
+double vertDeg = 0;
+double horDeg = 0;
+double X;
+double Y;
+bool first = true;
 
 float vertices[] = {
 	 0.5f,  0.5f, 0.0f,  // top right
@@ -45,6 +51,55 @@ void keyStrokeCall(GLFWwindow* window, int key, int scancode, int action, int mo
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
+}
+
+static void mousePosCall(GLFWwindow* window, double xpos, double ypos) {
+	if (first) {
+		X = xpos;
+		Y = ypos;
+		first = !first;
+	}
+	else {
+		if (ypos < Y) {
+			std::cout << ypos << " <Y> " << Y << std::endl;
+			vertDeg += 1.0f;
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
+			if(vertDeg <= 45.0f)
+			model = glm::rotate(model, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+			Y = ypos;
+		}
+		else if (ypos > Y) {
+			vertDeg -= 1.0f;
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
+			if (vertDeg >= -45.0f)
+				model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+			Y = ypos;
+		}
+		if (xpos < X) {
+			horDeg += 1.0f;
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
+			if (horDeg <= 45.0f)
+				model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+			X = xpos;
+		}
+		else if (xpos > X) {
+			horDeg -= 1.0f;
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
+			if (horDeg >= -45.0f)
+				model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+			X = xpos;
+		}
+	}
+	
+
 }
 
 std::vector<unsigned int> getObjIndices() {
@@ -149,6 +204,9 @@ int main()
 		return -1;
 	}
 	glfwSetKeyCallback(window, keyStrokeCall);
+	glfwSetCursorPosCallback(window, mousePosCall);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 	
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -281,14 +339,16 @@ int main()
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+
 		glUseProgram(program);
 		glBindVertexArray(vertexArrayObject);
-		glm::mat4 model = glm::mat4(1.0f);
+		
+
 		//TODO gun follow cursor
-		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f,1.0f,0.0f));
 		glm::mat4 view = glm::mat4(1.0f);
-		view = glm::lookAt(glm::vec3(2.0f, 0.0f, 10.0f),
-			glm::vec3(0.0f, 0.0f, 0.0f),
+		view = glm::lookAt(glm::vec3(-2.0f, 1.2f, 10.0f),
+			glm::vec3(0.0f, 0.0f, -300.0f),
 			glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 projection;
 		projection = glm::perspective(glm::radians(45.0f), 1200.0f / 900.0f, 0.1f, 100.0f);
