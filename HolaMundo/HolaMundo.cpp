@@ -82,16 +82,24 @@ void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 		glEnableVertexAttribArray(0);
 		glBindVertexArray(0);
 		std::cout << vertDeg << " <Vert Hor> " << horDeg << std::endl;
-		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, 0.0f, glm::sin(glm::radians(vertDeg)) * 5));
-		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(glm::cos(glm::radians(horDeg)) * 5, glm::sin(glm::radians(horDeg)) * 5, 0.0f));
+		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, glm::sin(glm::radians(vertDeg)) * 5, 0.0f));
+		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(glm::sin(glm::radians(-horDeg)) * 5,0.0f, glm::cos(glm::radians(-horDeg)) * 5));
 		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, 0.0f, -5.0f));
 
+		//bulletPosMat = glm::translate(bulletPosMat, glm::vec3(-3.0f,-3.0f,0.0f));
 		vertexArrayObjects.push_back(bulletVertexArrayObject);
-		vaoSizes.push_back(bulletIndices.size());
+		vaoSizes.push_back(bulletIndices.size());	
 
+	}
+	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+		//std::cout << glm::sin(glm::radians(vertDeg)) * 5 << std::endl;
 
 		
-
+		bulletPosMat = glm::mat4(1.0f);
+		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, glm::sin(glm::radians(vertDeg)) * 5, 0.0f));
+		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(glm::sin(glm::radians(-horDeg)) * 5, 0.0f, glm::cos(glm::radians(-horDeg)) * 5));
+		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, 0.0f, -5.0f));
+		
 	}
 }
 
@@ -109,18 +117,15 @@ static void mousePosCall(GLFWwindow* window, double xpos, double ypos) {
 		first = !first;
 	}
 	else {
-		std::cout << "Start" << std::endl;
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
 		if (xpos < X) {
 			if (horDeg <= 15.0f) {
-				//model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 				horDeg += 1.0f;
 			}
 			X = xpos;
 		}
 		else if (xpos > X) {
 			if (horDeg >= -15.0f) {
-				//model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 				horDeg -= 1.0f;
 			}
 			X = xpos;
@@ -128,23 +133,21 @@ static void mousePosCall(GLFWwindow* window, double xpos, double ypos) {
 		model = glm::rotate(model, glm::radians(horDeg), glm::vec3(0.0f, 1.0f, 0.0f));
 		if (ypos < Y) {
 			if (vertDeg < 15.0f) {
-				//model = glm::rotate(model, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 				vertDeg += 1.0f;
 			}
 			Y = ypos;
 		}
 		else if (ypos > Y) {	
 			if (vertDeg > -15.0f) {
-				//model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 				vertDeg -= 1.0f;
 			}
 			Y = ypos;
 		}
 		model = glm::rotate(model, glm::radians(vertDeg), glm::vec3(1.0f, 0.0f, 0.0f));
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
-		std::cout << "END" << std::endl;
+		
 	}
-	std::cout << vertDeg << ":V  H:" << horDeg << std::endl;
+	//std::cout << vertDeg << ":V  H:" << horDeg << std::endl;
 	
 }
 std::vector<unsigned int> getBulletIndices() {
@@ -459,7 +462,7 @@ int main()
 		//TODO gun follow cursor
 		
 		glm::mat4 view = glm::mat4(1.0f);
-		view = glm::lookAt(glm::vec3(0.0f, 3.2f, 10.0f),
+		view = glm::lookAt(glm::vec3(5.0f, 3.2f, 10.0f),
 			glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 projection;

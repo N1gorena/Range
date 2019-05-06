@@ -1,5 +1,5 @@
 ﻿  HolaMundo.cpp
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(153): warning C4018: '<': signed/unsigned mismatch
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(162): warning C4018: '<': signed/unsigned mismatch
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(477): warning C4018: '<': signed/unsigned mismatch
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(156): warning C4018: '<': signed/unsigned mismatch
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(165): warning C4018: '<': signed/unsigned mismatch
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(480): warning C4018: '<': signed/unsigned mismatch
   HolaMundo.vcxproj -> C:\Users\guang\VISUALSOURCE\repos\HolaMundo\Debug\HolaMundo.exe
