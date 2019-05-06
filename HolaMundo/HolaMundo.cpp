@@ -15,11 +15,20 @@
 #include <glfw3.h>
 
 std::vector<float> vertexPoints;
+std::vector<float> bulletPoints;
 std::vector<unsigned int> faceVertices;
+std::vector<unsigned int> bulletFaces;
 std::vector<float> verts(24);
+std::vector<unsigned int> vertexArrayObjects;
+std::vector<unsigned int> vaoSizes;
+
+unsigned int bulletVertexArrayObject;
+
+
 glm::mat4 model = glm::mat4(1.0f);
-double vertDeg = 0;
-double horDeg = 0;
+glm::mat4 bulletPosMat = glm::mat4(1.0f);
+float vertDeg = 0;
+float horDeg = 0;
 double X;
 double Y;
 bool first = true;
@@ -46,6 +55,45 @@ unsigned int indices[] = {
 
 };
 
+std::vector<unsigned int> getBulletIndices();
+std::vector<float> getBulletVerts();
+
+void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		std::vector<float> bulletVerts = getBulletVerts();
+		std::vector<unsigned int> bulletIndices = getBulletIndices();
+
+
+		unsigned int vertexBufferObject;
+		
+		unsigned int elementBufferObject;
+
+		glGenVertexArrays(1, &bulletVertexArrayObject);
+		glBindVertexArray(bulletVertexArrayObject);
+		glGenBuffers(1, &vertexBufferObject);
+		glGenBuffers(1, &elementBufferObject);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
+		glBufferData(GL_ARRAY_BUFFER, bulletVerts.size() * sizeof(float), &bulletVerts[0], GL_STATIC_DRAW);
+		//glBufferData(GL_ARRAY_BUFFER, verts.size()*sizeof(float), &verts[0] , GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, bulletIndices.size() * sizeof(unsigned int), &bulletIndices[0], GL_STATIC_DRAW);
+		//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		glBindVertexArray(0);
+		std::cout << vertDeg << " <Vert Hor> " << horDeg << std::endl;
+		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, 0.0f, glm::sin(glm::radians(vertDeg)) * 5));
+		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(glm::cos(glm::radians(horDeg)) * 5, glm::sin(glm::radians(horDeg)) * 5, 0.0f));
+		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, 0.0f, -5.0f));
+
+		vertexArrayObjects.push_back(bulletVertexArrayObject);
+		vaoSizes.push_back(bulletIndices.size());
+
+
+		
+
+	}
+}
 
 void keyStrokeCall(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -54,52 +102,59 @@ void keyStrokeCall(GLFWwindow* window, int key, int scancode, int action, int mo
 }
 
 static void mousePosCall(GLFWwindow* window, double xpos, double ypos) {
+	model = glm::mat4(1.0f);
 	if (first) {
 		X = xpos;
 		Y = ypos;
 		first = !first;
 	}
 	else {
-		if (ypos < Y) {
-			std::cout << ypos << " <Y> " << Y << std::endl;
-			vertDeg += 1.0f;
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
-			if(vertDeg <= 45.0f)
-			model = glm::rotate(model, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
-			Y = ypos;
-		}
-		else if (ypos > Y) {
-			vertDeg -= 1.0f;
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
-			if (vertDeg >= -45.0f)
-				model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
-			Y = ypos;
-		}
+		std::cout << "Start" << std::endl;
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
 		if (xpos < X) {
-			horDeg += 1.0f;
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
-			if (horDeg <= 45.0f)
-				model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+			if (horDeg <= 15.0f) {
+				//model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				horDeg += 1.0f;
+			}
 			X = xpos;
 		}
 		else if (xpos > X) {
-			horDeg -= 1.0f;
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
-			if (horDeg >= -45.0f)
-				model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-			model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+			if (horDeg >= -15.0f) {
+				//model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				horDeg -= 1.0f;
+			}
 			X = xpos;
 		}
+		model = glm::rotate(model, glm::radians(horDeg), glm::vec3(0.0f, 1.0f, 0.0f));
+		if (ypos < Y) {
+			if (vertDeg < 15.0f) {
+				//model = glm::rotate(model, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+				vertDeg += 1.0f;
+			}
+			Y = ypos;
+		}
+		else if (ypos > Y) {	
+			if (vertDeg > -15.0f) {
+				//model = glm::rotate(model, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+				vertDeg -= 1.0f;
+			}
+			Y = ypos;
+		}
+		model = glm::rotate(model, glm::radians(vertDeg), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+		std::cout << "END" << std::endl;
 	}
+	std::cout << vertDeg << ":V  H:" << horDeg << std::endl;
 	
+}
+std::vector<unsigned int> getBulletIndices() {
+	std::vector<unsigned int> orderedIndices;
 
+	for (int i = 0; i < bulletFaces.size(); i++) {
+		orderedIndices.push_back(bulletFaces[i] - 1);
+	}
+
+	return orderedIndices;
 }
 
 std::vector<unsigned int> getObjIndices() {
@@ -109,6 +164,56 @@ std::vector<unsigned int> getObjIndices() {
 	}
 	return orderedIndices;
 }
+std::vector<float> getBulletVerts() {
+	std::ifstream bulletFile;
+	std::string fileLine;
+	std::string token;
+
+	bulletFile.open("bullet.obj");
+
+	while (bulletFile >> token) {
+		if (token == "v") {
+			float v1, v2, v3;
+			bulletFile >> v1;
+			bulletFile >> v2;
+			bulletFile >> v3;
+			bulletPoints.push_back(v1);
+			bulletPoints.push_back(v2);
+			bulletPoints.push_back(v3);
+
+			getline(bulletFile, fileLine);
+		}
+		if (token == "vn") {
+			//TODO
+			getline(bulletFile, fileLine);
+		}
+		if (token == "f") {
+			getline(bulletFile, fileLine);
+			// + x indicates a step over the found token to search for next token starting at prevToken + tokenLength.
+			int firstSlashes = fileLine.find("//");
+			int firstSpace = fileLine.find(' ', firstSlashes + 2);
+
+			int secondSlashes = fileLine.find("//", firstSpace + 1);
+			int secondSpace = fileLine.find(' ', secondSlashes + 2);
+
+			int thirdSlashes = fileLine.find("//", secondSpace + 1);
+			//third space should be end of string.
+
+			bulletFaces.push_back(stoi(fileLine.substr(0, firstSlashes), NULL, 10));
+			bulletFaces.push_back(stoi(fileLine.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
+			bulletFaces.push_back(stoi(fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
+			//int n = fileLine.find("//");
+			/*std::cout << fileLine.substr(0, firstSlashes) << " " << fileLine.substr(firstSlashes+2,firstSpace-(firstSlashes+2)) << " " <<
+				fileLine.substr(firstSpace+1,secondSlashes-(firstSpace+1)) << " " << fileLine.substr(secondSlashes+2,secondSpace-(secondSlashes+2)) << " " <<
+				fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)) << " " << fileLine.substr(thirdSlashes + 2, std::string::npos) << " " <<
+				std::endl;*/
+		}
+
+		//std::cout << fileLine << std::endl;
+	}
+	return bulletPoints;
+}
+
 
 std::vector<float> getObjVerts() {
 	std::ifstream objectFile;
@@ -204,6 +309,7 @@ int main()
 		return -1;
 	}
 	glfwSetKeyCallback(window, keyStrokeCall);
+	glfwSetMouseButtonCallback(window, mouseClickCall);
 	glfwSetCursorPosCallback(window, mousePosCall);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -304,6 +410,7 @@ int main()
 
 	
 	std::vector<float> vertsB = getObjVerts();
+	
 	/*for (int i = 0; i < vertsB.size(); i++) {
 		std::cout << vertsB[i] << std::endl;
 	}*/
@@ -331,6 +438,10 @@ int main()
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
 
+	vertexArrayObjects.push_back(vertexArrayObject);
+	vaoSizes.push_back(indicesB.size());
+	
+	//model = glm::rotate(model, -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 	
 	glViewport(0, 0, 1200, 900);
 	glfwShowWindow(window);
@@ -342,13 +453,14 @@ int main()
 
 
 		glUseProgram(program);
-		glBindVertexArray(vertexArrayObject);
+		
 		
 
 		//TODO gun follow cursor
+		
 		glm::mat4 view = glm::mat4(1.0f);
-		view = glm::lookAt(glm::vec3(-2.0f, 1.2f, 10.0f),
-			glm::vec3(0.0f, 0.0f, -300.0f),
+		view = glm::lookAt(glm::vec3(0.0f, 3.2f, 10.0f),
+			glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 projection;
 		projection = glm::perspective(glm::radians(45.0f), 1200.0f / 900.0f, 0.1f, 100.0f);
@@ -361,7 +473,20 @@ int main()
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-		glDrawElements(GL_TRIANGLES, indicesB.size() , GL_UNSIGNED_INT, 0);
+
+		for (int i = 0; i < vertexArrayObjects.size(); i++) {
+			//std::cout << vertexArrayObjects.size();
+			if (vertexArrayObjects[i] == bulletVertexArrayObject) {
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bulletPosMat));
+			}
+			glBindVertexArray(vertexArrayObjects[i]);
+
+			glDrawElements(GL_TRIANGLES, vaoSizes[i], GL_UNSIGNED_INT, 0);
+		}
+		
+				
+		//glBindVertexArray(vertexArrayObject);
+		//glDrawElements(GL_TRIANGLES, indicesB.size() , GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
