@@ -7,6 +7,9 @@
 #include <string>
 #include <math.h>
 #include <vector>
+
+#include <ode/ode.h>
+
 #include <glm-0.9.9.5/glm/glm/glm.hpp>
 #include <glm-0.9.9.5/glm/glm/gtc/matrix_transform.hpp>
 #include <glm-0.9.9.5/glm/glm/gtc/type_ptr.hpp>
@@ -295,6 +298,67 @@ std::vector<float> getObjVerts() {
 int main()
 {
 	std::cout << "Here we go again!" << std::endl;
+	dMass bulletMass;
+	dMatrix3 R;
+	dWorldID world;
+	dSpaceID collisionSpace;
+
+	//Create physics world
+	dInitODE2(0);
+	world = dWorldCreate();
+	collisionSpace = dHashSpaceCreate(0);
+
+
+	std::ifstream blenderObj;
+	std::string fline;
+	std::vector<float> verticeData;
+	std::vector<int> faceVerticeData;
+	std::string token;
+	blenderObj.open("cube.obj");
+	while (blenderObj >> token) {
+		std::cout << token << std::endl;
+		if (token == "v") {
+			float v1, v2, v3;
+			blenderObj >> v1;
+			blenderObj >> v2;
+			blenderObj >> v3;
+			verticeData.push_back(v1);
+			verticeData.push_back(v2);
+			verticeData.push_back(v3);
+
+			getline(blenderObj, fline);
+		}
+		if (token == "vn") {
+			//TODO
+			getline(blenderObj, fline);
+		}
+		if (token == "f") {
+			getline(blenderObj, fline);
+			// + x indicates a step over the found token to search for next token starting at prevToken + tokenLength.
+			int firstSlashes = fline.find("//");
+			int firstSpace = fline.find(' ', firstSlashes + 2);
+
+			int secondSlashes = fline.find("//", firstSpace + 1);
+			int secondSpace = fline.find(' ', secondSlashes + 2);
+
+			int thirdSlashes = fline.find("//", secondSpace + 1);
+			//third space should be end of string.
+
+			faceVerticeData.push_back(stoi(fline.substr(0, firstSlashes), NULL, 10));
+			faceVerticeData.push_back(stoi(fline.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
+			faceVerticeData.push_back(stoi(fline.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
+		}
+
+		//std::cout << fileLine << std::endl;
+	}
+	/*
+	for (int i = 0; i < verticeData.size(); i++) {
+		std::cout << verticeData[i] << std::endl;
+	}
+	for (int i = 0; i < faceVerticeData.size(); i++) {
+		std::cout << faceVerticeData[i] << std::endl;
+	}*/
+
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
