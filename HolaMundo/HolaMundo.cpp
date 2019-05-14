@@ -161,23 +161,23 @@ void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 		vaoSizes.push_back(bulletIndices.size());	
 
 		//TODELETE
-		sphbody = dBodyCreate(world);
+		/*sphbody = dBodyCreate(world);
 		dMassSetSphere(&bulletMass, 1, RADIUS);
 		dBodySetMass(sphbody, &bulletMass);
 		sphgeom = dCreateSphere(0, RADIUS);
 		dGeomSetBody(sphgeom, sphbody);
-
-		float sx = 0.0f, sy = 5.0f, sz = 1.15;
+		*/
+		float sx = 0.0f, sy = 0.0f, sz = 1.15;
 
 		dQuaternion q;
 		dQSetIdentity(q);
 		dBodySetPosition(sphbody, sx, sy, sz);
 		dBodySetQuaternion(sphbody, q);
-		dBodySetLinearVel(sphbody, 0, -25.0f, 0.0f);
+		dBodySetLinearVel(sphbody, 0, -10.0f, 0.0f);
 		dBodySetAngularVel(sphbody, 0, 0, 0);
 
 
-		dSpaceAdd(collisionSpace, sphgeom);
+		//dSpaceAdd(collisionSpace, sphgeom);
 
 
 		//DELETEABOVE
@@ -457,7 +457,7 @@ int main()
 	world = dWorldCreate();
 	collisionSpace = dHashSpaceCreate(0);
 	contactgroup = dJointGroupCreate(0);
-	dWorldSetGravity(world, 0, 0, -9.8);
+	dWorldSetGravity(world, 0, 0, -1.0);
 	dWorldSetQuickStepNumIterations(world, 64);
 
 	//Load wall into world
@@ -524,14 +524,18 @@ int main()
 	dGeomTriMeshEnableTC(world_mesh, dSphereClass, false);
 	dGeomTriMeshEnableTC(world_mesh, dBoxClass, false);
 
-	dGeomSetPosition(world_mesh, 0, -5, 0.5);
+	dGeomSetPosition(world_mesh, 0, -25, 0.5);
 	dRSetIdentity(R);
 	//dIASSERT(dVALIDMAT3(R));
 
 	dGeomSetRotation(world_mesh, R);
 
-	
-
+	sphbody = dBodyCreate(world);
+	dMassSetSphere(&bulletMass, 1, RADIUS);
+	dBodySetMass(sphbody, &bulletMass);
+	sphgeom = dCreateSphere(0, RADIUS);
+	dGeomSetBody(sphgeom, sphbody);
+	dSpaceAdd(collisionSpace, sphgeom);
 	
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -716,17 +720,11 @@ int main()
 	while (!glfwWindowShouldClose(window)) {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-
+		
 		glUseProgram(program);
 		
-		
-
-		//TODO gun follow cursor
-		
 		glm::mat4 view = glm::mat4(1.0f);
-		view = glm::lookAt(glm::vec3(5.0f, 3.2f, 10.0f),
+		view = glm::lookAt(glm::vec3(10.0f, 5.0f, 10.0f),
 			glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 projection;
@@ -736,31 +734,7 @@ int main()
 		int viewLoc = glGetUniformLocation(program, "view");
 		int projectionLoc = glGetUniformLocation(program, "projection");
 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-
-		for (int i = 0; i < vertexArrayObjects.size(); i++) {
-			//std::cout << vertexArrayObjects.size();
-			if (vertexArrayObjects[i] == bulletVertexArrayObject) {
-				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bulletPosMat));
-			}
-			else if (vertexArrayObjects[i] == vertexArrayObject2) {
-				glm::mat4 id = glm::mat4(1.0f);
-				id = glm::translate(id, glm::vec3(0.0f,0.0f,-25.0f));
-				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(id));
-
-			}
-			else if (vertexArrayObjects[i] == vertexArrayObject) {
-				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			}
-			glBindVertexArray(vertexArrayObjects[i]);
-
-			glDrawElements(GL_TRIANGLES, vaoSizes[i], GL_UNSIGNED_INT, 0);
-		}
-		
-				
+		//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));	
 		//glBindVertexArray(vertexArrayObject);
 		//glDrawElements(GL_TRIANGLES, indicesB.size() , GL_UNSIGNED_INT, 0);
 		
@@ -780,6 +754,39 @@ int main()
 			dJointGroupEmpty(contactgroup);
 		}
 
+		const dReal *SPos = dBodyGetPosition(sphbody);
+		const dReal *SRot = dBodyGetRotation(sphbody);
+		float spos[3] = { SPos[0], SPos[1], SPos[2] };
+		float srot[16] = { SRot[0], SRot[1], SRot[2], SRot[3], SRot[4], SRot[5], SRot[6], SRot[7], SRot[8], SRot[9], SRot[10], SRot[11], 0.0f, 0.0f, 0.0f, 0.0f};
+		glm::mat4 test = glm::make_mat4(srot);
+
+
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+
+		for (int i = 0; i < vertexArrayObjects.size(); i++) {
+			//std::cout << vertexArrayObjects.size();
+			if (vertexArrayObjects[i] == bulletVertexArrayObject) {
+				//std::cout << spos[0] << " " << spos[1] << " " << spos[2] << std::endl;
+				bulletPosMat = glm::mat4(1.0f);
+				bulletPosMat = glm::translate(bulletPosMat, glm::vec3(spos[0], spos[2], spos[1]));
+				//bulletPosMat = glm::rotate(bulletPosMat,)
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bulletPosMat));
+			}
+			else if (vertexArrayObjects[i] == vertexArrayObject2) {
+				glm::mat4 id = glm::mat4(1.0f);
+				id = glm::translate(id, glm::vec3(0.0f, 0.0f, -25.0f));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(id));
+
+			}
+			else if (vertexArrayObjects[i] == vertexArrayObject) {
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			}
+			glBindVertexArray(vertexArrayObjects[i]);
+
+			glDrawElements(GL_TRIANGLES, vaoSizes[i], GL_UNSIGNED_INT, 0);
+		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
