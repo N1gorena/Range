@@ -167,7 +167,12 @@ void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 		sphgeom = dCreateSphere(0, RADIUS);
 		dGeomSetBody(sphgeom, sphbody);
 		*/
-		float sx = 0.0f, sy = 0.0f, sz = 1.15;
+		float sx = glm::sin(glm::radians(-horDeg)) * 5;
+		float sy = (glm::cos(glm::radians(-horDeg)) * 5) - 5.0f;
+		float sz = glm::sin(glm::radians(vertDeg)) * 5;
+		//float sx = glm::sin(glm::radians(-horDeg)) * 5;
+		//float sy = glm::sin(glm::radians(vertDeg)) * 5;
+		//float sz = (glm::cos(glm::radians(-horDeg)) * 5) - 5.0f;
 
 		dQuaternion q;
 		dQSetIdentity(q);
