@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <ode/ode.h>
+#include <drawstuff/drawstuff.h>
 
 #include <glm-0.9.9.5/glm/glm/glm.hpp>
 #include <glm-0.9.9.5/glm/glm/gtc/matrix_transform.hpp>
@@ -16,6 +17,8 @@
 
 #include <glad.h>
 #include <glfw3.h>
+
+#define RADIUS 0.14
 
 std::vector<float> vertexPoints;
 std::vector<float> bulletPoints;
@@ -25,7 +28,26 @@ std::vector<float> verts(24);
 std::vector<unsigned int> vertexArrayObjects;
 std::vector<unsigned int> vaoSizes;
 
+static std::vector<float> verticeData;
+static std::vector<int> faceVerticeData;
+
+static std::vector<float> wallData;
+static std::vector<int> wallfaces;
+
+static std::vector<float> odeVertices;
+static dGeomID world_mesh;
+static dWorldID world;
+static dJointGroupID contactgroup;
+static dBodyID sphbody;
+static dGeomID sphgeom;
+static dMass bulletMass;
+static dSpaceID collisionSpace;
+
 unsigned int bulletVertexArrayObject;
+static unsigned int vertexBufferObject2;
+unsigned int vertexArrayObject2;
+
+
 
 
 glm::mat4 model = glm::mat4(1.0f);
@@ -61,6 +83,51 @@ unsigned int indices[] = {
 std::vector<unsigned int> getBulletIndices();
 std::vector<float> getBulletVerts();
 
+
+static void nearCallback(void *data, dGeomID o1, dGeomID o2)
+{
+	assert(o1);
+	assert(o2);
+
+	if (dGeomIsSpace(o1) || dGeomIsSpace(o2))
+	{
+		fprintf(stderr, "testing space %p %p\n", (void*)o1, (void*)o2);
+		// colliding a space with something
+		dSpaceCollide2(o1, o2, data, &nearCallback);
+		// Note we do not want to test intersections within a space,
+		// only between spaces.
+		return;
+	}
+
+	//  fprintf(stderr,"testing geoms %p %p\n", o1, o2);
+
+	const int N = 32;
+	dContact contact[N];
+	int n = dCollide(o1, o2, N, &(contact[0].geom), sizeof(dContact));
+	if (n > 0)
+	{
+		std::cout << "COLLISION DETECTED" << std::endl;
+		for (int i = 0; i < n; i++)
+		{
+			// Paranoia  <-- not working for some people, temporarily removed for 0.6
+			//dIASSERT(dVALIDVEC3(contact[i].geom.pos));
+			//dIASSERT(dVALIDVEC3(contact[i].geom.normal));
+			//dIASSERT(!dIsNan(contact[i].geom.depth));
+			contact[i].surface.slip1 = 0.7;
+			contact[i].surface.slip2 = 0.7;
+			contact[i].surface.mode = dContactSoftERP | dContactSoftCFM | dContactApprox1 | dContactSlip1 | dContactSlip2;
+			contact[i].surface.mu = 50.0; // was: dInfinity
+			contact[i].surface.soft_erp = 0.96;
+			contact[i].surface.soft_cfm = 0.04;
+			dJointID c = dJointCreateContact(world, contactgroup, &contact[i]);
+			dJointAttach(c,
+				dGeomGetBody(contact[i].geom.g1),
+				dGeomGetBody(contact[i].geom.g2));
+		}
+	}
+}
+
+
 void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 		std::vector<float> bulletVerts = getBulletVerts();
@@ -93,6 +160,27 @@ void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 		vertexArrayObjects.push_back(bulletVertexArrayObject);
 		vaoSizes.push_back(bulletIndices.size());	
 
+		//TODELETE
+		sphbody = dBodyCreate(world);
+		dMassSetSphere(&bulletMass, 1, RADIUS);
+		dBodySetMass(sphbody, &bulletMass);
+		sphgeom = dCreateSphere(0, RADIUS);
+		dGeomSetBody(sphgeom, sphbody);
+
+		float sx = 0.0f, sy = 5.0f, sz = 1.15;
+
+		dQuaternion q;
+		dQSetIdentity(q);
+		dBodySetPosition(sphbody, sx, sy, sz);
+		dBodySetQuaternion(sphbody, q);
+		dBodySetLinearVel(sphbody, 0, -25.0f, 0.0f);
+		dBodySetAngularVel(sphbody, 0, 0, 0);
+
+
+		dSpaceAdd(collisionSpace, sphgeom);
+
+
+		//DELETEABOVE
 	}
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
 		//std::cout << glm::sin(glm::radians(vertDeg)) * 5 << std::endl;
@@ -295,28 +383,92 @@ std::vector<float> getObjVerts() {
 	return vertexPoints;
 }
 
+
+std::vector<float> getWallVerts() {
+	std::ifstream objectFile;
+	std::string fileLine;
+	std::string token;
+
+	objectFile.open("wall.obj");
+	//getline(objectFile, fileLine)
+	while (objectFile >> token) {
+		if (token == "v") {
+			float v1, v2, v3;
+			objectFile >> v1;
+			objectFile >> v2;
+			objectFile >> v3;
+			wallData.push_back(v1);
+			wallData.push_back(v2);
+			wallData.push_back(v3);
+
+			getline(objectFile, fileLine);
+		}
+		if (token == "vn") {
+			//TODO
+			getline(objectFile, fileLine);
+		}
+		if (token == "f") {
+			getline(objectFile, fileLine);
+			// + x indicates a step over the found token to search for next token starting at prevToken + tokenLength.
+			int firstSlashes = fileLine.find("//");
+			int firstSpace = fileLine.find(' ', firstSlashes + 2);
+
+			int secondSlashes = fileLine.find("//", firstSpace + 1);
+			int secondSpace = fileLine.find(' ', secondSlashes + 2);
+
+			int thirdSlashes = fileLine.find("//", secondSpace + 1);
+			//third space should be end of string.
+
+			wallfaces.push_back(stoi(fileLine.substr(0, firstSlashes), NULL, 10));
+			wallfaces.push_back(stoi(fileLine.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
+			wallfaces.push_back(stoi(fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
+			//int n = fileLine.find("//");
+			/*std::cout << fileLine.substr(0, firstSlashes) << " " << fileLine.substr(firstSlashes+2,firstSpace-(firstSlashes+2)) << " " <<
+				fileLine.substr(firstSpace+1,secondSlashes-(firstSpace+1)) << " " << fileLine.substr(secondSlashes+2,secondSpace-(secondSlashes+2)) << " " <<
+				fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)) << " " << fileLine.substr(thirdSlashes + 2, std::string::npos) << " " <<
+				std::endl;*/
+		}
+
+		//std::cout << fileLine << std::endl;
+	}
+
+	return wallData;
+}
+
+std::vector<unsigned int> getWallIndices() {
+	std::vector<unsigned int> orderedIndices;
+	for (int i = 0; i < wallfaces.size(); i++) {
+		orderedIndices.push_back(wallfaces[i] - 1);
+	}
+	return orderedIndices;
+}
+
 int main()
 {
 	std::cout << "Here we go again!" << std::endl;
-	dMass bulletMass;
+	
 	dMatrix3 R;
-	dWorldID world;
-	dSpaceID collisionSpace;
+	
+	
+	
 
 	//Create physics world
 	dInitODE2(0);
 	world = dWorldCreate();
 	collisionSpace = dHashSpaceCreate(0);
+	contactgroup = dJointGroupCreate(0);
+	dWorldSetGravity(world, 0, 0, -9.8);
+	dWorldSetQuickStepNumIterations(world, 64);
+
+	//Load wall into world
 
 
 	std::ifstream blenderObj;
 	std::string fline;
-	std::vector<float> verticeData;
-	std::vector<int> faceVerticeData;
 	std::string token;
-	blenderObj.open("cube.obj");
+	blenderObj.open("G:\\Anthem\\C_files\\wall.obj");
+
 	while (blenderObj >> token) {
-		std::cout << token << std::endl;
 		if (token == "v") {
 			float v1, v2, v3;
 			blenderObj >> v1;
@@ -343,22 +495,44 @@ int main()
 
 			int thirdSlashes = fline.find("//", secondSpace + 1);
 			//third space should be end of string.
-
 			faceVerticeData.push_back(stoi(fline.substr(0, firstSlashes), NULL, 10));
 			faceVerticeData.push_back(stoi(fline.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
 			faceVerticeData.push_back(stoi(fline.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
 		}
 
-		//std::cout << fileLine << std::endl;
+
 	}
-	/*
-	for (int i = 0; i < verticeData.size(); i++) {
-		std::cout << verticeData[i] << std::endl;
+	blenderObj.close();
+
+	for (int i = 0; i < verticeData.size(); i += 3) {
+		odeVertices.push_back(verticeData[i]);
+		odeVertices.push_back(verticeData[i + 2]);
+		odeVertices.push_back(verticeData[i + 1]);
 	}
 	for (int i = 0; i < faceVerticeData.size(); i++) {
-		std::cout << faceVerticeData[i] << std::endl;
-	}*/
+		faceVerticeData[i] -= 1;
+	}
+	for (int i = 0; i < faceVerticeData.size(); i += 3) {
+		dTriIndex t = faceVerticeData[i];
+		faceVerticeData[i] = faceVerticeData[i + 2];
+		faceVerticeData[i + 2] = t;
+	}
 
+	dTriMeshDataID Data = dGeomTriMeshDataCreate();
+	dGeomTriMeshDataBuildSingle(Data, &odeVertices[0], 3 * sizeof(float), odeVertices.size() / 3, &faceVerticeData[0], faceVerticeData.size(), 3 * sizeof(dTriIndex));
+	world_mesh = dCreateTriMesh(collisionSpace, Data, 0, 0, 0);
+	dGeomTriMeshEnableTC(world_mesh, dSphereClass, false);
+	dGeomTriMeshEnableTC(world_mesh, dBoxClass, false);
+
+	dGeomSetPosition(world_mesh, 0, -5, 0.5);
+	dRSetIdentity(R);
+	//dIASSERT(dVALIDMAT3(R));
+
+	dGeomSetRotation(world_mesh, R);
+
+	
+
+	
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -487,6 +661,30 @@ int main()
 		std::cout << "IND:" << indicesB[i] << std::endl;
 	}*/
 
+	std::vector<float> wallVerts = getWallVerts();
+	std::vector<unsigned int> wallIndices = getWallIndices();
+
+	
+	
+	unsigned int elementBufferObject2;
+
+	glGenVertexArrays(1, &vertexArrayObject2);
+	glBindVertexArray(vertexArrayObject2);
+	glGenBuffers(1, &vertexBufferObject2);
+	glGenBuffers(1, &elementBufferObject2);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject2);
+	glBufferData(GL_ARRAY_BUFFER, wallVerts.size() * sizeof(float), &wallVerts[0], GL_STATIC_DRAW);
+	//glBufferData(GL_ARRAY_BUFFER, verts.size()*sizeof(float), &verts[0] , GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject2);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, wallIndices.size() * sizeof(unsigned int), &wallIndices[0], GL_STATIC_DRAW);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
+
+	vertexArrayObjects.push_back(vertexArrayObject2);
+	vaoSizes.push_back(wallIndices.size());
+
 	unsigned int vertexBufferObject;
 	unsigned int vertexArrayObject;
 	unsigned int elementBufferObject;
@@ -512,7 +710,9 @@ int main()
 	
 	glViewport(0, 0, 1200, 900);
 	glfwShowWindow(window);
-
+	bool firstTick = true;
+	double dnow;
+	double dlast = 0.0;
 	while (!glfwWindowShouldClose(window)) {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -546,6 +746,15 @@ int main()
 			if (vertexArrayObjects[i] == bulletVertexArrayObject) {
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bulletPosMat));
 			}
+			else if (vertexArrayObjects[i] == vertexArrayObject2) {
+				glm::mat4 id = glm::mat4(1.0f);
+				id = glm::translate(id, glm::vec3(0.0f,0.0f,-25.0f));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(id));
+
+			}
+			else if (vertexArrayObjects[i] == vertexArrayObject) {
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			}
 			glBindVertexArray(vertexArrayObjects[i]);
 
 			glDrawElements(GL_TRIANGLES, vaoSizes[i], GL_UNSIGNED_INT, 0);
@@ -554,6 +763,23 @@ int main()
 				
 		//glBindVertexArray(vertexArrayObject);
 		//glDrawElements(GL_TRIANGLES, indicesB.size() , GL_UNSIGNED_INT, 0);
+		
+		double simstep = 0.0001; // 1ms simulation steps
+
+		dnow = glfwGetTime();
+		double elapsedTime = dnow - dlast;
+		dlast = dnow;
+		
+		int nrofsteps = (int)ceilf(elapsedTime / simstep);
+		//  fprintf(stderr, "dt=%f, nr of steps = %d\n", dt, nrofsteps);
+
+		for (int i = 0; i < nrofsteps; i++)
+		{
+			dSpaceCollide(collisionSpace, 0, &nearCallback);
+			dWorldQuickStep(world, simstep);
+			dJointGroupEmpty(contactgroup);
+		}
+
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
