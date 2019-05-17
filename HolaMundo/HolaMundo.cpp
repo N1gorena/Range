@@ -18,23 +18,34 @@
 #include <glad.h>
 #include <glfw3.h>
 
+//Radius if bullet
 #define RADIUS 0.14
+//Z offset of gun
+#define CENTERGUN 5.0
+//Wall distance from gun barrel
+#define WALL_SEPERATION 15.0
 
+//Statics for gun
 std::vector<float> vertexPoints;
-std::vector<float> bulletPoints;
 std::vector<unsigned int> faceVertices;
+//Statics for bullet
+std::vector<float> bulletPoints;
 std::vector<unsigned int> bulletFaces;
-std::vector<float> verts(24);
+unsigned int bulletVertexArrayObject;
+//statics to hold VAO and EBO count.
 std::vector<unsigned int> vertexArrayObjects;
 std::vector<unsigned int> vaoSizes;
-
+//Statics for wall for ODE
 static std::vector<float> verticeData;
 static std::vector<int> faceVerticeData;
-
+static std::vector<float> odeVertices;
+//Statics for wall for opengl
 static std::vector<float> wallData;
 static std::vector<int> wallfaces;
+static unsigned int vertexBufferObject2;
+unsigned int vertexArrayObject2;
 
-static std::vector<float> odeVertices;
+//ODE statics
 static dGeomID world_mesh;
 static dWorldID world;
 static dJointGroupID contactgroup;
@@ -43,47 +54,26 @@ static dGeomID sphgeom;
 static dMass bulletMass;
 static dSpaceID collisionSpace;
 
-unsigned int bulletVertexArrayObject;
-static unsigned int vertexBufferObject2;
-unsigned int vertexArrayObject2;
+
+
 
 
 
 
 glm::mat4 model = glm::mat4(1.0f);
 glm::mat4 bulletPosMat = glm::mat4(1.0f);
+//GLFW statics
 float vertDeg = 0;
 float horDeg = 0;
 double X;
 double Y;
 bool first = true;
 
-float vertices[] = {
-	 0.5f,  0.5f, 0.0f,  // top right
-	 0.5f, -0.5f, 0.0f,  // bottom right
-	-0.5f, -0.5f, 0.0f,  // bottom left
-	-0.5f,  0.5f, 0.0f   // top left 
-};
-unsigned int indices[] = {
-0, 1, 2,  // second triangle
-3,4,5,
-5,0,2,
-4,6,0,
-6,3,1,
-2,3,5,
-0,6,1,
-3,7,4,
-5,4,0,
-4,7,6,
-6,7,3,
-2,1,3
-
-};
-
+//Function declaration without definition.
 std::vector<unsigned int> getBulletIndices();
 std::vector<float> getBulletVerts();
 
-
+//Called by ODE to determine what bodies/geoms are colliding.
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 {
 	assert(o1);
@@ -106,7 +96,6 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 	int n = dCollide(o1, o2, N, &(contact[0].geom), sizeof(dContact));
 	if (n > 0)
 	{
-		std::cout << "COLLISION DETECTED" << std::endl;
 		for (int i = 0; i < n; i++)
 		{
 			// Paranoia  <-- not working for some people, temporarily removed for 0.6
@@ -127,7 +116,7 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 	}
 }
 
-
+//GLFW callback function for mouse clicks.
 void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 		std::vector<float> bulletVerts = getBulletVerts();
@@ -135,7 +124,6 @@ void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 
 
 		unsigned int vertexBufferObject;
-		
 		unsigned int elementBufferObject;
 
 		glGenVertexArrays(1, &bulletVertexArrayObject);
@@ -144,35 +132,21 @@ void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 		glGenBuffers(1, &elementBufferObject);
 		glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
 		glBufferData(GL_ARRAY_BUFFER, bulletVerts.size() * sizeof(float), &bulletVerts[0], GL_STATIC_DRAW);
-		//glBufferData(GL_ARRAY_BUFFER, verts.size()*sizeof(float), &verts[0] , GL_STATIC_DRAW);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, bulletIndices.size() * sizeof(unsigned int), &bulletIndices[0], GL_STATIC_DRAW);
-		//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 		glBindVertexArray(0);
-		std::cout << vertDeg << " <Vert Hor> " << horDeg << std::endl;
-		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, glm::sin(glm::radians(vertDeg)) * 5, 0.0f));
-		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(glm::sin(glm::radians(-horDeg)) * 5,0.0f, glm::cos(glm::radians(-horDeg)) * 5));
-		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, 0.0f, -5.0f));
+		
 
-		//bulletPosMat = glm::translate(bulletPosMat, glm::vec3(-3.0f,-3.0f,0.0f));
+	
 		vertexArrayObjects.push_back(bulletVertexArrayObject);
 		vaoSizes.push_back(bulletIndices.size());	
 
-		//TODELETE
-		/*sphbody = dBodyCreate(world);
-		dMassSetSphere(&bulletMass, 1, RADIUS);
-		dBodySetMass(sphbody, &bulletMass);
-		sphgeom = dCreateSphere(0, RADIUS);
-		dGeomSetBody(sphgeom, sphbody);
-		*/
 		float sx = glm::sin(glm::radians(-horDeg)) * 5;
 		float sy = (glm::cos(glm::radians(-horDeg)) * 5) - 5.0f;
 		float sz = glm::sin(glm::radians(vertDeg)) * 5;
-		//float sx = glm::sin(glm::radians(-horDeg)) * 5;
-		//float sy = glm::sin(glm::radians(vertDeg)) * 5;
-		//float sz = (glm::cos(glm::radians(-horDeg)) * 5) - 5.0f;
+	
 
 		dQuaternion q;
 		dQSetIdentity(q);
@@ -181,69 +155,63 @@ void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 		dBodySetLinearVel(sphbody, 0, -10.0f, 0.0f);
 		dBodySetAngularVel(sphbody, 0, 0, 0);
 
-
-		//dSpaceAdd(collisionSpace, sphgeom);
-
-
-		//DELETEABOVE
-	}
-	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-		//std::cout << glm::sin(glm::radians(vertDeg)) * 5 << std::endl;
-
-		
-		bulletPosMat = glm::mat4(1.0f);
-		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, glm::sin(glm::radians(vertDeg)) * 5, 0.0f));
-		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(glm::sin(glm::radians(-horDeg)) * 5, 0.0f, glm::cos(glm::radians(-horDeg)) * 5));
-		bulletPosMat = glm::translate(bulletPosMat, glm::vec3(0.0f, 0.0f, -5.0f));
-		
 	}
 }
-
+//GLFW keyboard callback for closing window/ending program.
 void keyStrokeCall(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
 }
-
+//GLFW mouse position callback. Used to determine the orientation of the gun.
 static void mousePosCall(GLFWwindow* window, double xpos, double ypos) {
 	model = glm::mat4(1.0f);
+	//On mouse capture
 	if (first) {
 		X = xpos;
 		Y = ypos;
 		first = !first;
 	}
+	//After mouse is captured.
 	else {
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
+		//Center object.
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, CENTERGUN));
+		//Rotate Up
 		if (xpos < X) {
 			if (horDeg <= 15.0f) {
 				horDeg += 1.0f;
 			}
 			X = xpos;
 		}
+		//Rotate Down
 		else if (xpos > X) {
 			if (horDeg >= -15.0f) {
 				horDeg -= 1.0f;
 			}
 			X = xpos;
 		}
+		//Rotate object on Y axis while maintaining global y.
 		model = glm::rotate(model, glm::radians(horDeg), glm::vec3(0.0f, 1.0f, 0.0f));
+		//Rotate left
 		if (ypos < Y) {
+			
 			if (vertDeg < 15.0f) {
 				vertDeg += 1.0f;
 			}
 			Y = ypos;
 		}
+		//Rotate right.
 		else if (ypos > Y) {	
 			if (vertDeg > -15.0f) {
 				vertDeg -= 1.0f;
 			}
 			Y = ypos;
 		}
+		//Rotate object on x axis, losing global orientation
 		model = glm::rotate(model, glm::radians(vertDeg), glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -CENTERGUN));
 		
 	}
-	//std::cout << vertDeg << ":V  H:" << horDeg << std::endl;
 	
 }
 std::vector<unsigned int> getBulletIndices() {
@@ -263,6 +231,7 @@ std::vector<unsigned int> getObjIndices() {
 	}
 	return orderedIndices;
 }
+
 std::vector<float> getBulletVerts() {
 	std::ifstream bulletFile;
 	std::string fileLine;
@@ -359,32 +328,9 @@ std::vector<float> getObjVerts() {
 				std::endl;*/
 		}
 		
-		//std::cout << fileLine << std::endl;
-	}
-
-
-	/*
-	//MAGIC NUMBER 3: 3 components per face vertex x,y,z
-	std::vector<float> orderedVertices(faceVertices.size() *3);
-	//MAGIC NUMBER 3: 3 vertices per face so iterating over faces should be a third of vertex count/size.
-	for (int i = 0; i < faceVertices.size()/3; i++) {
-		//Each face is 3 vertices so the ith face starts at i*3 in the face array.
-		//Total vertice data is 3x faceVertices size because each vertex in a face has an x,y,z component.
-		
-		orderedVertices[ i * 9 ]     = vertexPoints[ (faceVertices[i * 3] - 1) * 3];
-		orderedVertices[(i * 9) + 1] = vertexPoints[((faceVertices[i * 3] - 1) * 3)+1];
-		orderedVertices[(i * 9) + 2] = vertexPoints[((faceVertices[i * 3] - 1) * 3)+2];
-		orderedVertices[(i * 9) + 3] = vertexPoints[((faceVertices[(i * 3) + 1] - 1) * 3)];
-		orderedVertices[(i * 9) + 4] = vertexPoints[((faceVertices[(i * 3) + 1] - 1) * 3) + 1];
-		orderedVertices[(i * 9) + 5] = vertexPoints[((faceVertices[(i * 3) + 1] - 1) * 3) + 2];
-		orderedVertices[(i * 9) + 6] = vertexPoints[((faceVertices[(i * 3) + 2] - 1) * 3)];
-		orderedVertices[(i * 9) + 7] = vertexPoints[((faceVertices[(i * 3) + 2] - 1) * 3) + 1];
-		orderedVertices[(i * 9) + 8] = vertexPoints[((faceVertices[(i * 3) + 2] - 1) * 3) + 2];
-
 		
 	}
-	*/
-	
+
 	return vertexPoints;
 }
 
@@ -450,8 +396,7 @@ std::vector<unsigned int> getWallIndices() {
 
 int main()
 {
-	std::cout << "Here we go again!" << std::endl;
-	
+	//Identity rotation matrix to init wall in ODE
 	dMatrix3 R;
 	
 	
@@ -508,7 +453,7 @@ int main()
 
 	}
 	blenderObj.close();
-
+	//Translate wavefront obj vertices to ODE vertices. Switch Y, and Z.
 	for (int i = 0; i < verticeData.size(); i += 3) {
 		odeVertices.push_back(verticeData[i]);
 		odeVertices.push_back(verticeData[i + 2]);
@@ -517,6 +462,7 @@ int main()
 	for (int i = 0; i < faceVerticeData.size(); i++) {
 		faceVerticeData[i] -= 1;
 	}
+	//Re order the face winding by swapping x,z vertices for the face.
 	for (int i = 0; i < faceVerticeData.size(); i += 3) {
 		dTriIndex t = faceVerticeData[i];
 		faceVerticeData[i] = faceVerticeData[i + 2];
@@ -529,7 +475,7 @@ int main()
 	dGeomTriMeshEnableTC(world_mesh, dSphereClass, false);
 	dGeomTriMeshEnableTC(world_mesh, dBoxClass, false);
 
-	dGeomSetPosition(world_mesh, 0, -25, 0.5);
+	dGeomSetPosition(world_mesh, 0, -WALL_SEPERATION, 0.5);
 	dRSetIdentity(R);
 	//dIASSERT(dVALIDMAT3(R));
 
@@ -574,14 +520,16 @@ int main()
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
+	//Vertex shader processing.
 	std::ifstream vFile;
 	std::string line;
 	std::stringstream vertSrcStream;
-	
+	//Open file and read into a stringstream. Append a newline for each line to be in correct format for opengl shader source.
 	vFile.open("vShader.txt");
 	while (getline(vFile, line)) {
 		vertSrcStream << line << "\n";
 	}
+	//Convert stringstream to string and then to C style string.
 	std::string  vertSrc = vertSrcStream.str();
 	const char * vertString = vertSrc.c_str();
 
@@ -595,14 +543,15 @@ int main()
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
 		std::cout << "V err LOG: " << infoLog << std::endl;
 	}
-
+	//Fragment shader processing.
 	std::ifstream fFile;
 	std::stringstream fragSrcStream;
-
+	//Open file and read into a stringstream. Append a newline for each line to be in correct format for opengl shader source.
 	fFile.open("fShader.txt");
 	while (getline(fFile, line)) {
 		fragSrcStream << line << "\n";
 	}
+	//Convert stringstream to string and then to C style string.
 	std::string  fragSrc = fragSrcStream.str();
 	const char * fragString = fragSrc.c_str();
 	
@@ -614,7 +563,7 @@ int main()
 		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
 		std::cout << "F err LOG: " << infoLog << std::endl;
 	}
-
+	//Create and link program.
 	program = glCreateProgram();
 	glAttachShader(program, vertexShader);
 	glAttachShader(program, fragmentShader);
@@ -624,51 +573,11 @@ int main()
 	if (!success) {
 		glGetProgramInfoLog(program, 512, NULL, infoLog);
 	}
-
-
-	verts[0] = 1.0f;
-	verts[1] = -1.0f;
-	verts[2] = 1.0f;
-
-	verts[3] = -1.0f;
-	verts[4] = -1.0f;
-	verts[5] = -1.0f;
-
-	verts[6] =  1.0f;
-	verts[7] = -1.0f;
-	verts[8] = -1.0f;
-
-	verts[9] = -1.0f;
-	verts[10] = 1.0f;
-	verts[11] = -1.0f;
-
-	verts[12] = 1.0f;
-	verts[13] = 1.0f;
-	verts[14] = 1.0f;
-	
-	verts[15] = 1.0f;
-	verts[16] = 1.0f;
-	verts[17] = -1.0f;
-	
-	verts[18] = -1.0f;
-	verts[19] = -1.0f;
-	verts[20] =  1.0f;
-	
-	verts[21] = -1.0f;
-	verts[22] =  1.0f;
-	verts[23] =  1.0f;
+	//Shaders can be deleted. TODO.
 
 	
 	std::vector<float> vertsB = getObjVerts();
-	
-	/*for (int i = 0; i < vertsB.size(); i++) {
-		std::cout << vertsB[i] << std::endl;
-	}*/
-
 	std::vector<unsigned int> indicesB = getObjIndices();
-	/*for (int i = 0; i < indicesB.size(); i++) {
-		std::cout << "IND:" << indicesB[i] << std::endl;
-	}*/
 
 	std::vector<float> wallVerts = getWallVerts();
 	std::vector<unsigned int> wallIndices = getWallIndices();
@@ -683,10 +592,8 @@ int main()
 	glGenBuffers(1, &elementBufferObject2);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject2);
 	glBufferData(GL_ARRAY_BUFFER, wallVerts.size() * sizeof(float), &wallVerts[0], GL_STATIC_DRAW);
-	//glBufferData(GL_ARRAY_BUFFER, verts.size()*sizeof(float), &verts[0] , GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferObject2);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, wallIndices.size() * sizeof(unsigned int), &wallIndices[0], GL_STATIC_DRAW);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
@@ -727,68 +634,64 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		glUseProgram(program);
-		
+
+		//Create camera matrix and projection matrix.
 		glm::mat4 view = glm::mat4(1.0f);
 		view = glm::lookAt(glm::vec3(10.0f, 5.0f, 10.0f),
 			glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 projection;
 		projection = glm::perspective(glm::radians(45.0f), 1200.0f / 900.0f, 0.1f, 100.0f);
-
+		//Uniform locations
 		int modelLoc = glGetUniformLocation(program, "model");
 		int viewLoc = glGetUniformLocation(program, "view");
 		int projectionLoc = glGetUniformLocation(program, "projection");
 		int colorLoc = glGetUniformLocation(program, "objColor");
-
-		//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));	
-		//glBindVertexArray(vertexArrayObject);
-		//glDrawElements(GL_TRIANGLES, indicesB.size() , GL_UNSIGNED_INT, 0);
 		
+		//ODE sim step time.
 		double simstep = 0.0001; // 1ms simulation steps
-
+		//Determine time since last simsteps.
 		dnow = glfwGetTime();
 		double elapsedTime = dnow - dlast;
 		dlast = dnow;
-		
+		//Step count
 		int nrofsteps = (int)ceilf(elapsedTime / simstep);
-		//  fprintf(stderr, "dt=%f, nr of steps = %d\n", dt, nrofsteps);
-
 		for (int i = 0; i < nrofsteps; i++)
 		{
 			dSpaceCollide(collisionSpace, 0, &nearCallback);
 			dWorldQuickStep(world, simstep);
 			dJointGroupEmpty(contactgroup);
 		}
-
+		//Get information for bullet.
 		const dReal *SPos = dBodyGetPosition(sphbody);
 		const dReal *SRot = dBodyGetRotation(sphbody);
 		float spos[3] = { SPos[0], SPos[1], SPos[2] };
 		float srot[16] = { SRot[0], SRot[1], SRot[2], SRot[3], SRot[4], SRot[5], SRot[6], SRot[7], SRot[8], SRot[9], SRot[10], SRot[11], 0.0f, 0.0f, 0.0f, 0.0f};
 		glm::mat4 test = glm::make_mat4(srot);
 
-
+		//Set the universal matrices.
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-
+		//For every openGL VAO, bind it and draw it using model Matrix based on type of object.
 		for (int i = 0; i < vertexArrayObjects.size(); i++) {
-			//std::cout << vertexArrayObjects.size();
-			if (vertexArrayObjects[i] == bulletVertexArrayObject) {
-				//std::cout << spos[0] << " " << spos[1] << " " << spos[2] << std::endl;
+			if (vertexArrayObjects[i] == bulletVertexArrayObject){ 
+				//If the object is the bullet, update its position based on ODE values grabbed above.
 				bulletPosMat = glm::mat4(1.0f);
 				bulletPosMat = glm::translate(bulletPosMat, glm::vec3(spos[0], spos[2], spos[1]));
-				//bulletPosMat = glm::rotate(bulletPosMat,)
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bulletPosMat));
 				glUniform4f(colorLoc, 1.0f, 0.0f, 0.0f, 1.0f);
 			}
 			else if (vertexArrayObjects[i] == vertexArrayObject2) {
+				//Wall object. Translate it back.
 				glm::mat4 id = glm::mat4(1.0f);
-				id = glm::translate(id, glm::vec3(0.0f, 0.0f, -25.0f));
+				id = glm::translate(id, glm::vec3(0.0f, 0.0f, -WALL_SEPERATION));
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(id));
 				glUniform4f(colorLoc, 0.0f, 1.0f, 0.0f, 1.0f);
 
 			}
 			else if (vertexArrayObjects[i] == vertexArrayObject) {
+				//Gun object.
 				glUniform4f(colorLoc, 0.0f, 0.0f, 1.0f, 1.0f);
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 			}
