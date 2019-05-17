@@ -5,10 +5,10 @@ c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(445): warnin
 c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(512): warning C4018: '<': signed/unsigned mismatch
 c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(517): warning C4018: '<': signed/unsigned mismatch
 c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(520): warning C4018: '<': signed/unsigned mismatch
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(752): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(764): warning C4838: conversion from 'const dReal' to 'float' requires a narrowing conversion
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(764): warning C4244: 'initializing': conversion from 'const dReal' to 'float', possible loss of data
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(753): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
 c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(765): warning C4838: conversion from 'const dReal' to 'float' requires a narrowing conversion
 c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(765): warning C4244: 'initializing': conversion from 'const dReal' to 'float', possible loss of data
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(773): warning C4018: '<': signed/unsigned mismatch
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(766): warning C4838: conversion from 'const dReal' to 'float' requires a narrowing conversion
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(766): warning C4244: 'initializing': conversion from 'const dReal' to 'float', possible loss of data
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(774): warning C4018: '<': signed/unsigned mismatch
   HolaMundo.vcxproj -> C:\Users\guang\VISUALSOURCE\repos\HolaMundo\Debug\HolaMundo.exe

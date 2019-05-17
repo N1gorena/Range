@@ -738,6 +738,7 @@ int main()
 		int modelLoc = glGetUniformLocation(program, "model");
 		int viewLoc = glGetUniformLocation(program, "view");
 		int projectionLoc = glGetUniformLocation(program, "projection");
+		int colorLoc = glGetUniformLocation(program, "objColor");
 
 		//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));	
 		//glBindVertexArray(vertexArrayObject);
@@ -778,14 +779,17 @@ int main()
 				bulletPosMat = glm::translate(bulletPosMat, glm::vec3(spos[0], spos[2], spos[1]));
 				//bulletPosMat = glm::rotate(bulletPosMat,)
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(bulletPosMat));
+				glUniform4f(colorLoc, 1.0f, 0.0f, 0.0f, 1.0f);
 			}
 			else if (vertexArrayObjects[i] == vertexArrayObject2) {
 				glm::mat4 id = glm::mat4(1.0f);
 				id = glm::translate(id, glm::vec3(0.0f, 0.0f, -25.0f));
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(id));
+				glUniform4f(colorLoc, 0.0f, 1.0f, 0.0f, 1.0f);
 
 			}
 			else if (vertexArrayObjects[i] == vertexArrayObject) {
+				glUniform4f(colorLoc, 0.0f, 0.0f, 1.0f, 1.0f);
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 			}
 			glBindVertexArray(vertexArrayObjects[i]);
