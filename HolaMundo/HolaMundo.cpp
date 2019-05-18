@@ -63,9 +63,60 @@ double X;
 double Y;
 bool first = true;
 
-//Function declaration without definition.
-std::vector<unsigned int> getBulletIndices();
-std::vector<float> getBulletVerts();
+//object file processing function.
+void processFile(std::string src, std::vector<float>& verts, std::vector<unsigned int>& indices) {
+	std::ifstream objectFile;
+	std::string fileLine;
+	std::string token;
+
+	objectFile.open(src);
+	//getline(objectFile, fileLine)
+	while (objectFile >> token) {
+		if (token == "v") {
+			float v1, v2, v3;
+			objectFile >> v1;
+			objectFile >> v2;
+			objectFile >> v3;
+			verts.push_back(v1);
+			verts.push_back(v2);
+			verts.push_back(v3);
+
+			getline(objectFile, fileLine);
+		}
+		if (token == "vn") {
+			//TODO
+			getline(objectFile, fileLine);
+		}
+		if (token == "f") {
+			getline(objectFile, fileLine);
+			// + x indicates a step over the found token to search for next token starting at prevToken + tokenLength.
+			int firstSlashes = fileLine.find("//");
+			int firstSpace = fileLine.find(' ', firstSlashes + 2);
+
+			int secondSlashes = fileLine.find("//", firstSpace + 1);
+			int secondSpace = fileLine.find(' ', secondSlashes + 2);
+
+			int thirdSlashes = fileLine.find("//", secondSpace + 1);
+			//third space should be end of string.
+
+			indices.push_back(stoi(fileLine.substr(0, firstSlashes), NULL, 10));
+			indices.push_back(stoi(fileLine.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
+			indices.push_back(stoi(fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
+			//int n = fileLine.find("//");
+			/*std::cout << fileLine.substr(0, firstSlashes) << " " << fileLine.substr(firstSlashes+2,firstSpace-(firstSlashes+2)) << " " <<
+				fileLine.substr(firstSpace+1,secondSlashes-(firstSpace+1)) << " " << fileLine.substr(secondSlashes+2,secondSpace-(secondSlashes+2)) << " " <<
+				fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)) << " " << fileLine.substr(thirdSlashes + 2, std::string::npos) << " " <<
+				std::endl;*/
+		}
+
+		//std::cout << fileLine << std::endl;
+	}
+	std::vector<unsigned int> orderedIndices;
+	for (int i = 0; i < indices.size(); i++) {
+		orderedIndices.push_back(indices[i] - 1);
+	}
+	indices = orderedIndices;
+}
 
 //Called by ODE to determine what bodies/geoms are colliding.
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
@@ -210,60 +261,6 @@ static void mousePosCall(GLFWwindow* window, double xpos, double ypos) {
 	
 }
 
-void processFile(std::string src, std::vector<float>& verts, std::vector<unsigned int>& indices) {
-	std::ifstream objectFile;
-	std::string fileLine;
-	std::string token;
-
-	objectFile.open(src);
-	//getline(objectFile, fileLine)
-	while (objectFile >> token) {
-		if (token == "v") {
-			float v1, v2, v3;
-			objectFile >> v1;
-			objectFile >> v2;
-			objectFile >> v3;
-			verts.push_back(v1);
-			verts.push_back(v2);
-			verts.push_back(v3);
-
-			getline(objectFile, fileLine);
-		}
-		if (token == "vn") {
-			//TODO
-			getline(objectFile, fileLine);
-		}
-		if (token == "f") {
-			getline(objectFile, fileLine);
-			// + x indicates a step over the found token to search for next token starting at prevToken + tokenLength.
-			int firstSlashes = fileLine.find("//");
-			int firstSpace = fileLine.find(' ', firstSlashes + 2);
-
-			int secondSlashes = fileLine.find("//", firstSpace + 1);
-			int secondSpace = fileLine.find(' ', secondSlashes + 2);
-
-			int thirdSlashes = fileLine.find("//", secondSpace + 1);
-			//third space should be end of string.
-
-			indices.push_back(stoi(fileLine.substr(0, firstSlashes), NULL, 10));
-			indices.push_back(stoi(fileLine.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
-			indices.push_back(stoi(fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
-			//int n = fileLine.find("//");
-			/*std::cout << fileLine.substr(0, firstSlashes) << " " << fileLine.substr(firstSlashes+2,firstSpace-(firstSlashes+2)) << " " <<
-				fileLine.substr(firstSpace+1,secondSlashes-(firstSpace+1)) << " " << fileLine.substr(secondSlashes+2,secondSpace-(secondSlashes+2)) << " " <<
-				fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)) << " " << fileLine.substr(thirdSlashes + 2, std::string::npos) << " " <<
-				std::endl;*/
-		}
-
-		//std::cout << fileLine << std::endl;
-	}
-	std::vector<unsigned int> orderedIndices;
-	for (int i = 0; i < indices.size(); i++) {
-		orderedIndices.push_back(indices[i] - 1);
-	}
-	indices = orderedIndices;
-}
-
 int main()
 {
 	//Identity rotation matrix to init wall in ODE
@@ -302,7 +299,7 @@ int main()
 	dGeomTriMeshEnableTC(world_mesh, dSphereClass, false);
 	dGeomTriMeshEnableTC(world_mesh, dBoxClass, false);
 
-	dGeomSetPosition(world_mesh, 0, -WALL_SEPERATION, 0.5);
+	dGeomSetPosition(world_mesh, 0, -WALL_SEPERATION, 0.0);
 	dRSetIdentity(R);
 	//dIASSERT(dVALIDMAT3(R));
 
@@ -338,6 +335,7 @@ int main()
 
 	
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
 	glCullFace(GL_BACK);
 
 	unsigned int fragmentShader;

@@ -1,15 +1,11 @@
 ﻿  HolaMundo.cpp
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(220): warning C4018: '<': signed/unsigned mismatch
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(229): warning C4018: '<': signed/unsigned mismatch
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(391): warning C4018: '<': signed/unsigned mismatch
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(445): warning C4018: '<': signed/unsigned mismatch
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(472): warning C4018: '<': signed/unsigned mismatch
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(478): warning C4018: '<': signed/unsigned mismatch
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(678): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(688): warning C4838: conversion from 'const dReal' to 'float' requires a narrowing conversion
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(688): warning C4244: 'initializing': conversion from 'const dReal' to 'float', possible loss of data
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(689): warning C4838: conversion from 'const dReal' to 'float' requires a narrowing conversion
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(689): warning C4244: 'initializing': conversion from 'const dReal' to 'float', possible loss of data
-c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(697): warning C4018: '<': signed/unsigned mismatch
-glad.obj : warning LNK4099: PDB 'vc141.pdb' was not found with 'glad.obj' or at 'C:\Users\guang\VISUALSOURCE\repos\HolaMundo\Debug\vc141.pdb'; linking object as if no debug info
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(115): warning C4018: '<': signed/unsigned mismatch
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(284): warning C4018: '<': signed/unsigned mismatch
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(290): warning C4018: '<': signed/unsigned mismatch
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(484): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(494): warning C4838: conversion from 'const dReal' to 'float' requires a narrowing conversion
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(494): warning C4244: 'initializing': conversion from 'const dReal' to 'float', possible loss of data
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(495): warning C4838: conversion from 'const dReal' to 'float' requires a narrowing conversion
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(495): warning C4244: 'initializing': conversion from 'const dReal' to 'float', possible loss of data
+c:\users\guang\visualsource\repos\holamundo\holamundo\holamundo.cpp(503): warning C4018: '<': signed/unsigned mismatch
   HolaMundo.vcxproj -> C:\Users\guang\VISUALSOURCE\repos\HolaMundo\Debug\HolaMundo.exe
