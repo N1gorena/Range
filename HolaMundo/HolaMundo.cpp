@@ -37,7 +37,7 @@ std::vector<unsigned int> vertexArrayObjects;
 std::vector<unsigned int> vaoSizes;
 //Statics for wall for ODE
 static std::vector<float> verticeData;
-static std::vector<int> faceVerticeData;
+static std::vector<unsigned int> faceVerticeData;
 static std::vector<float> odeVertices;
 //Statics for wall for opengl
 static std::vector<float> wallData;
@@ -53,13 +53,7 @@ static dBodyID sphbody;
 static dGeomID sphgeom;
 static dMass bulletMass;
 static dSpaceID collisionSpace;
-
-
-
-
-
-
-
+//Position matrices.
 glm::mat4 model = glm::mat4(1.0f);
 glm::mat4 bulletPosMat = glm::mat4(1.0f);
 //GLFW statics
@@ -119,8 +113,9 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 //GLFW callback function for mouse clicks.
 void mouseClickCall(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		std::vector<float> bulletVerts = getBulletVerts();
-		std::vector<unsigned int> bulletIndices = getBulletIndices();
+		std::vector<float> bulletVerts;
+		std::vector<unsigned int> bulletIndices;
+		processFile("bullet.obj",bulletVerts,bulletIndices);
 
 
 		unsigned int vertexBufferObject;
@@ -214,133 +209,13 @@ static void mousePosCall(GLFWwindow* window, double xpos, double ypos) {
 	}
 	
 }
-std::vector<unsigned int> getBulletIndices() {
-	std::vector<unsigned int> orderedIndices;
 
-	for (int i = 0; i < bulletFaces.size(); i++) {
-		orderedIndices.push_back(bulletFaces[i] - 1);
-	}
-
-	return orderedIndices;
-}
-
-std::vector<unsigned int> getObjIndices() {
-	std::vector<unsigned int> orderedIndices;
-	for (int i = 0; i < faceVertices.size(); i++) {
-		orderedIndices.push_back(faceVertices[i]-1);
-	}
-	return orderedIndices;
-}
-
-std::vector<float> getBulletVerts() {
-	std::ifstream bulletFile;
-	std::string fileLine;
-	std::string token;
-
-	bulletFile.open("bullet.obj");
-
-	while (bulletFile >> token) {
-		if (token == "v") {
-			float v1, v2, v3;
-			bulletFile >> v1;
-			bulletFile >> v2;
-			bulletFile >> v3;
-			bulletPoints.push_back(v1);
-			bulletPoints.push_back(v2);
-			bulletPoints.push_back(v3);
-
-			getline(bulletFile, fileLine);
-		}
-		if (token == "vn") {
-			//TODO
-			getline(bulletFile, fileLine);
-		}
-		if (token == "f") {
-			getline(bulletFile, fileLine);
-			// + x indicates a step over the found token to search for next token starting at prevToken + tokenLength.
-			int firstSlashes = fileLine.find("//");
-			int firstSpace = fileLine.find(' ', firstSlashes + 2);
-
-			int secondSlashes = fileLine.find("//", firstSpace + 1);
-			int secondSpace = fileLine.find(' ', secondSlashes + 2);
-
-			int thirdSlashes = fileLine.find("//", secondSpace + 1);
-			//third space should be end of string.
-
-			bulletFaces.push_back(stoi(fileLine.substr(0, firstSlashes), NULL, 10));
-			bulletFaces.push_back(stoi(fileLine.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
-			bulletFaces.push_back(stoi(fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
-			//int n = fileLine.find("//");
-			/*std::cout << fileLine.substr(0, firstSlashes) << " " << fileLine.substr(firstSlashes+2,firstSpace-(firstSlashes+2)) << " " <<
-				fileLine.substr(firstSpace+1,secondSlashes-(firstSpace+1)) << " " << fileLine.substr(secondSlashes+2,secondSpace-(secondSlashes+2)) << " " <<
-				fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)) << " " << fileLine.substr(thirdSlashes + 2, std::string::npos) << " " <<
-				std::endl;*/
-		}
-
-		//std::cout << fileLine << std::endl;
-	}
-	return bulletPoints;
-}
-
-
-std::vector<float> getObjVerts() {
+void processFile(std::string src, std::vector<float>& verts, std::vector<unsigned int>& indices) {
 	std::ifstream objectFile;
 	std::string fileLine;
 	std::string token;
 
-	objectFile.open("M4a1.obj");
-	//getline(objectFile, fileLine)
-	while(objectFile >> token) {
-		if (token == "v") {
-			float v1, v2, v3;
-			objectFile >> v1;
-			objectFile >> v2;
-			objectFile >> v3;
-			vertexPoints.push_back(v1);
-			vertexPoints.push_back(v2);
-			vertexPoints.push_back(v3);
-
-			getline(objectFile, fileLine);
-		}
-		if (token == "vn") {
-			//TODO
-			getline(objectFile, fileLine);
-		}
-		if (token == "f") {
-			getline(objectFile, fileLine);
-			// + x indicates a step over the found token to search for next token starting at prevToken + tokenLength.
-			int firstSlashes = fileLine.find("//");
-			int firstSpace = fileLine.find(' ', firstSlashes+2);
-			
-			int secondSlashes = fileLine.find("//", firstSpace + 1);
-			int secondSpace = fileLine.find(' ', secondSlashes + 2);
-
-			int thirdSlashes = fileLine.find("//", secondSpace + 1);
-			//third space should be end of string.
-
-			faceVertices.push_back( stoi( fileLine.substr( 0, firstSlashes ), NULL , 10 ) );
-			faceVertices.push_back(stoi ( fileLine.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL , 10 ) );
-			faceVertices.push_back(stoi (fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL , 10 ) );
-			//int n = fileLine.find("//");
-			/*std::cout << fileLine.substr(0, firstSlashes) << " " << fileLine.substr(firstSlashes+2,firstSpace-(firstSlashes+2)) << " " <<
-				fileLine.substr(firstSpace+1,secondSlashes-(firstSpace+1)) << " " << fileLine.substr(secondSlashes+2,secondSpace-(secondSlashes+2)) << " " <<
-				fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)) << " " << fileLine.substr(thirdSlashes + 2, std::string::npos) << " " <<
-				std::endl;*/
-		}
-		
-		
-	}
-
-	return vertexPoints;
-}
-
-
-std::vector<float> getWallVerts() {
-	std::ifstream objectFile;
-	std::string fileLine;
-	std::string token;
-
-	objectFile.open("wall.obj");
+	objectFile.open(src);
 	//getline(objectFile, fileLine)
 	while (objectFile >> token) {
 		if (token == "v") {
@@ -348,9 +223,9 @@ std::vector<float> getWallVerts() {
 			objectFile >> v1;
 			objectFile >> v2;
 			objectFile >> v3;
-			wallData.push_back(v1);
-			wallData.push_back(v2);
-			wallData.push_back(v3);
+			verts.push_back(v1);
+			verts.push_back(v2);
+			verts.push_back(v3);
 
 			getline(objectFile, fileLine);
 		}
@@ -370,9 +245,9 @@ std::vector<float> getWallVerts() {
 			int thirdSlashes = fileLine.find("//", secondSpace + 1);
 			//third space should be end of string.
 
-			wallfaces.push_back(stoi(fileLine.substr(0, firstSlashes), NULL, 10));
-			wallfaces.push_back(stoi(fileLine.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
-			wallfaces.push_back(stoi(fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
+			indices.push_back(stoi(fileLine.substr(0, firstSlashes), NULL, 10));
+			indices.push_back(stoi(fileLine.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
+			indices.push_back(stoi(fileLine.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
 			//int n = fileLine.find("//");
 			/*std::cout << fileLine.substr(0, firstSlashes) << " " << fileLine.substr(firstSlashes+2,firstSpace-(firstSlashes+2)) << " " <<
 				fileLine.substr(firstSpace+1,secondSlashes-(firstSpace+1)) << " " << fileLine.substr(secondSlashes+2,secondSpace-(secondSlashes+2)) << " " <<
@@ -382,16 +257,11 @@ std::vector<float> getWallVerts() {
 
 		//std::cout << fileLine << std::endl;
 	}
-
-	return wallData;
-}
-
-std::vector<unsigned int> getWallIndices() {
 	std::vector<unsigned int> orderedIndices;
-	for (int i = 0; i < wallfaces.size(); i++) {
-		orderedIndices.push_back(wallfaces[i] - 1);
+	for (int i = 0; i < indices.size(); i++) {
+		orderedIndices.push_back(indices[i] - 1);
 	}
-	return orderedIndices;
+	indices = orderedIndices;
 }
 
 int main()
@@ -411,56 +281,13 @@ int main()
 	dWorldSetQuickStepNumIterations(world, 64);
 
 	//Load wall into world
+	processFile("G:\\Anthem\\C_files\\wall.obj", verticeData, faceVerticeData);
 
-
-	std::ifstream blenderObj;
-	std::string fline;
-	std::string token;
-	blenderObj.open("G:\\Anthem\\C_files\\wall.obj");
-
-	while (blenderObj >> token) {
-		if (token == "v") {
-			float v1, v2, v3;
-			blenderObj >> v1;
-			blenderObj >> v2;
-			blenderObj >> v3;
-			verticeData.push_back(v1);
-			verticeData.push_back(v2);
-			verticeData.push_back(v3);
-
-			getline(blenderObj, fline);
-		}
-		if (token == "vn") {
-			//TODO
-			getline(blenderObj, fline);
-		}
-		if (token == "f") {
-			getline(blenderObj, fline);
-			// + x indicates a step over the found token to search for next token starting at prevToken + tokenLength.
-			int firstSlashes = fline.find("//");
-			int firstSpace = fline.find(' ', firstSlashes + 2);
-
-			int secondSlashes = fline.find("//", firstSpace + 1);
-			int secondSpace = fline.find(' ', secondSlashes + 2);
-
-			int thirdSlashes = fline.find("//", secondSpace + 1);
-			//third space should be end of string.
-			faceVerticeData.push_back(stoi(fline.substr(0, firstSlashes), NULL, 10));
-			faceVerticeData.push_back(stoi(fline.substr(firstSpace + 1, secondSlashes - (firstSpace + 1)), NULL, 10));
-			faceVerticeData.push_back(stoi(fline.substr(secondSpace + 1, thirdSlashes - (secondSpace + 1)), NULL, 10));
-		}
-
-
-	}
-	blenderObj.close();
 	//Translate wavefront obj vertices to ODE vertices. Switch Y, and Z.
 	for (int i = 0; i < verticeData.size(); i += 3) {
 		odeVertices.push_back(verticeData[i]);
 		odeVertices.push_back(verticeData[i + 2]);
 		odeVertices.push_back(verticeData[i + 1]);
-	}
-	for (int i = 0; i < faceVerticeData.size(); i++) {
-		faceVerticeData[i] -= 1;
 	}
 	//Re order the face winding by swapping x,z vertices for the face.
 	for (int i = 0; i < faceVerticeData.size(); i += 3) {
@@ -575,13 +402,14 @@ int main()
 	}
 	//Shaders can be deleted. TODO.
 
-	
-	std::vector<float> vertsB = getObjVerts();
-	std::vector<unsigned int> indicesB = getObjIndices();
-
-	std::vector<float> wallVerts = getWallVerts();
-	std::vector<unsigned int> wallIndices = getWallIndices();
-
+	//M4
+	std::vector<float> vertsB;
+	std::vector<unsigned int> indicesB;
+	processFile("M4a1.obj",vertsB,indicesB);
+	//Wall
+	std::vector<float> wallVerts;
+	std::vector<unsigned int> wallIndices;
+	processFile("wall.obj", wallVerts, wallIndices);
 	
 	
 	unsigned int elementBufferObject2;
